@@ -65,6 +65,20 @@
     margin:0 0 20px;
     letter-spacing:0.5px;
   }
+  .countdown-banner{
+    text-align:center;
+    font-size:13px;
+    font-weight:500;
+    padding:10px 14px;
+    border-radius:10px;
+    margin-bottom:20px;
+    background:var(--wine-soft);
+    color:var(--wine);
+  }
+  .countdown-banner.active{
+    background:var(--wine);
+    color:#fff;
+  }
   .ring-wrap{ position:relative; width:64px; height:64px; }
   .ring-wrap svg{ transform:rotate(-90deg); }
   .ring-track{ fill:none; stroke:var(--hairline); stroke-width:4; }
@@ -214,6 +228,7 @@
 
   <div id="content" style="display:none;">
     <h1 class="app-title">Code Red</h1>
+    <div class="countdown-banner" id="countdown-banner">–</div>
 
     <div class="header">
       <div class="month-nav">
@@ -361,6 +376,7 @@ function render() {
   const ring = document.getElementById('ring-progress');
   const label = document.getElementById('ring-label');
   const note = document.getElementById('phase-note');
+  const banner = document.getElementById('countdown-banner');
   const circumference = 169.6;
   if (lastStart) {
     const dayOfCycle = Math.max(1, Math.round((new Date() - new Date(lastStart)) / 86400000) + 1);
@@ -372,11 +388,26 @@ function render() {
     if (dayOfCycle <= 5) phase = 'Menstrual';
     else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
     else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
-    note.textContent = PHASE_LINES[phase] + '\n(' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
+    note.textContent = PHASE_LINES[phase] + ' (' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
+
+    if (dayOfCycle <= periodLength) {
+      banner.textContent = '🚨 Code Red ist aktiv 🚨';
+      banner.classList.add('active');
+    } else {
+      const daysUntil = avgLength - dayOfCycle;
+      banner.classList.remove('active');
+      if (daysUntil > 0) {
+        banner.textContent = 'Noch ' + daysUntil + ' Tag' + (daysUntil === 1 ? '' : 'e') + ' bis Code Red';
+      } else {
+        banner.textContent = 'Code Red überfällig um ' + Math.abs(daysUntil) + ' Tag' + (Math.abs(daysUntil) === 1 ? '' : 'e');
+      }
+    }
   } else {
     ring.style.strokeDashoffset = circumference;
     label.textContent = '–';
     note.textContent = 'Nothing logged yet.';
+    banner.textContent = 'No data yet';
+    banner.classList.remove('active');
   }
 
   const grid = document.getElementById('calendar-grid');
@@ -415,6 +446,9 @@ document.getElementById('request-toggle').onclick = () => {
   form.style.display = form.style.display === 'block' ? 'none' : 'block';
 };
 
+// prevent picking a date in the past
+document.getElementById('req-date').min = fmt(new Date());
+
 document.getElementById('request-submit').onclick = async () => {
   const name = document.getElementById('req-name').value.trim();
   const date = document.getElementById('req-date').value;
@@ -423,6 +457,7 @@ document.getElementById('request-submit').onclick = async () => {
   const note = document.getElementById('req-note').value.trim();
   if (!name) { alert('Add a name first.'); return; }
   if (!date) { alert('Pick a date first.'); return; }
+  if (date < fmt(new Date())) { alert('Pick a date that isn\'t in the past.'); return; }
   if (!shareId) return;
   await addDoc(collection(db, 'requests', shareId, 'items'), {
     name, date, time, place, note, createdAt: serverTimestamp()
