@@ -576,7 +576,8 @@ function render() {
   const note = document.getElementById('phase-note');
   const circumference = 169.6;
   if (lastStart) {
-    const dayOfCycle = Math.max(1, Math.round((new Date() - new Date(lastStart)) / 86400000) + 1);
+    const todayStr = fmt(new Date());
+const dayOfCycle = Math.max(1, Math.floor((new Date(todayStr) - new Date(lastStart)) / 86400000) + 1);
     const clamped = Math.min(dayOfCycle, avgLength);
     const pct = clamped / avgLength;
     ring.style.strokeDashoffset = circumference * (1 - pct);
