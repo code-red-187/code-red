@@ -18,6 +18,7 @@
     --wine-soft:#F3E3E3;
     --rose:#E3B6BA;
     --sage:#8B9A7A;
+    --sage-soft:#EEF1E9;
   }
   *{box-sizing:border-box;}
   body{
@@ -32,6 +33,99 @@
     margin:0 auto;
     padding:32px 20px 60px;
   }
+
+  /* auth */
+  #auth-screen{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:70vh;
+    text-align:center;
+  }
+  #auth-screen h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:32px;
+    margin:0 0 6px;
+  }
+  #auth-screen p.tagline{
+    color:var(--muted);
+    font-size:14px;
+    margin:0 0 32px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:320px;
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:24px;
+  }
+  input{
+    width:100%;
+    padding:11px 14px;
+    margin-bottom:10px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  input:focus{
+    outline:none;
+    border-color:var(--wine);
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-primary{
+    width:100%;
+    padding:12px;
+    background:var(--wine);
+    color:#fff;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:500;
+    margin-top:4px;
+  }
+  .btn-primary:hover{ background:#642532; }
+  .btn-link{
+    background:none;
+    color:var(--muted);
+    font-size:13px;
+    margin-top:14px;
+    text-decoration:underline;
+  }
+  #auth-error{
+    color:var(--wine);
+    font-size:13px;
+    margin-top:10px;
+    min-height:16px;
+  }
+
+  /* app */
+  #app-screen{ display:none; }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:24px;
+  }
+  .topbar .email{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .signout{
+    background:none;
+    color:var(--muted);
+    font-size:12px;
+    text-decoration:underline;
+  }
+
   .header{
     display:flex;
     justify-content:space-between;
@@ -45,8 +139,6 @@
     font-size:18px;
     width:28px;height:28px;
     border-radius:50%;
-    border:none;
-    cursor:pointer;
   }
   .month-nav button:hover{ background:var(--wine-soft); }
   .month-title{
@@ -65,6 +157,8 @@
     margin:0 0 20px;
     letter-spacing:0.5px;
   }
+
+  /* signature cycle ring */
   .ring-wrap{ position:relative; width:64px; height:64px; }
   .ring-wrap svg{ transform:rotate(-90deg); }
   .ring-track{ fill:none; stroke:var(--hairline); stroke-width:4; }
@@ -82,12 +176,14 @@
     color:var(--muted);
     margin-top:4px;
   }
+
   .phase-note{
     font-size:12px;
     color:var(--muted);
     text-align:center;
     margin-bottom:22px;
   }
+
   .weekdays{
     display:grid;
     grid-template-columns:repeat(7,1fr);
@@ -111,9 +207,12 @@
     justify-content:center;
     border-radius:50%;
     font-size:13px;
+    cursor:pointer;
+    position:relative;
     color:var(--ink);
   }
-  .day.empty{ visibility:hidden; }
+  .day.empty{ cursor:default; }
+  .day:not(.empty):hover{ background:var(--wine-soft); }
   .day.period{
     background:var(--wine);
     color:#fff;
@@ -126,6 +225,7 @@
   .day.today:not(.period){
     box-shadow:0 0 0 1.5px var(--sage) inset;
   }
+
   .legend{
     display:flex;
     gap:18px;
@@ -138,20 +238,39 @@
   .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
   .dot.period{ background:var(--wine); }
   .dot.predicted{ border:1.5px dashed var(--rose); }
-  .empty-state{
+
+  .sync-status{
     text-align:center;
+    font-size:11px;
     color:var(--muted);
-    font-size:14px;
-    margin-top:80px;
+    margin-top:28px;
   }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div id="loading" class="empty-state">Loading…</div>
 
-  <div id="content" style="display:none;">
+  <!-- Sign in / sign up -->
+  <div id="auth-screen">
+    <h1>Cycle</h1>
+    <p class="tagline">Your calendar, synced across every device.</p>
+    <div class="auth-card">
+      <input type="email" id="email-input" placeholder="name@email.com" autocomplete="email">
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+      <button class="btn-primary" id="signin-btn">Sign in</button>
+      <button class="btn-link" id="toggle-mode-btn">Need an account? Sign up</button>
+      <p id="auth-error"></p>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app-screen">
+    <div class="topbar">
+      <span class="email" id="user-email"></span>
+      <button class="signout" id="signout-btn">Sign out</button>
+    </div>
+
     <h1 class="app-title">Code Red</h1>
 
     <div class="header">
@@ -171,7 +290,7 @@
         <div class="ring-caption">cycle day</div>
       </div>
     </div>
-    <p class="phase-note" id="phase-note"></p>
+    <p class="phase-note" id="phase-note">Tap a day to mark it as a period day.</p>
 
     <div class="weekdays">
       <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
@@ -182,32 +301,124 @@
       <span><i class="dot period"></i>Logged</span>
       <span><i class="dot predicted"></i>Predicted</span>
     </div>
+
+    <p class="sync-status" id="sync-status">Synced</p>
+
+    <div style="margin-top:20px; text-align:center;">
+      <button class="btn-link" id="copy-link-btn" style="margin:0;">Copy my share link</button>
+    </div>
   </div>
+
 </div>
 
 <script type="module">
+/* =========================================================
+   1. FIREBASE SETUP
+   Create a free project at https://console.firebase.google.com
+   -> Build > Authentication > Sign-in method > enable Email/Password
+   -> Build > Firestore Database > Create database (start in test mode,
+      then lock it down with the rules below)
+   -> Project settings > General > Your apps > Web app > copy the config
+      object below.
+   ========================================================= */
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID"
+  apiKey: "AIzaSyD9DHCUde4F51K2hau861CsM74D0bvdSg4",
+  authDomain: "hallo-86b8b.firebaseapp.com",
+  projectId: "hallo-86b8b",
+  storageBucket: "hallo-86b8b.firebasestorage.app",
+  messagingSenderId: "601710514911",
+  appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-const params = new URLSearchParams(window.location.search);
-const shareId = params.get('id');
+/* =========================================================
+   2. AUTH
+   ========================================================= */
+let isSignUp = false;
+const authError = document.getElementById('auth-error');
+const emailInput = document.getElementById('email-input');
+const passwordInput = document.getElementById('password-input');
 
+document.getElementById('toggle-mode-btn').onclick = () => {
+  isSignUp = !isSignUp;
+  document.getElementById('signin-btn').textContent = isSignUp ? 'Sign up' : 'Sign in';
+  document.getElementById('toggle-mode-btn').textContent = isSignUp
+    ? 'Already have an account? Sign in'
+    : 'Need an account? Sign up';
+  authError.textContent = '';
+};
+
+document.getElementById('signin-btn').onclick = async () => {
+  authError.textContent = '';
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) { authError.textContent = 'Enter an email and password.'; return; }
+  try {
+    if (isSignUp) {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (e) {
+    authError.textContent = e.message.replace('Firebase: ', '');
+  }
+};
+
+document.getElementById('signout-btn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+    loadData(user.uid);
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+/* =========================================================
+   3. DATA
+   periodDays: array of "YYYY-MM-DD" strings the user has logged
+   ========================================================= */
 let periodDays = new Set();
+let currentUid = null;
 let current = new Date();
 current.setDate(1);
 
+async function loadData(uid) {
+  currentUid = uid;
+  const snap = await getDoc(doc(db, 'cycles', uid));
+  periodDays = new Set(snap.exists() ? (snap.data().periodDays || []) : []);
+  render();
+}
+
+async function saveData() {
+  if (!currentUid) return;
+  document.getElementById('sync-status').textContent = 'Syncing…';
+  const payload = { periodDays: Array.from(periodDays) };
+  await setDoc(doc(db, 'cycles', currentUid), payload);
+  // mirrored to a public doc so view.html can show it without login
+  await setDoc(doc(db, 'public', currentUid), payload);
+  document.getElementById('sync-status').textContent = 'Synced';
+}
+
+/* =========================================================
+   4. CALENDAR + CYCLE ESTIMATE
+   ========================================================= */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function fmt(d) {
@@ -279,6 +490,7 @@ function render() {
   const { avgLength, lastStart, periodLength } = estimateCycle();
   const predicted = predictedDays(avgLength, lastStart, periodLength);
 
+  // ring: day-of-cycle out of avgLength
   const ring = document.getElementById('ring-progress');
   const label = document.getElementById('ring-label');
   const note = document.getElementById('phase-note');
@@ -297,9 +509,10 @@ function render() {
   } else {
     ring.style.strokeDashoffset = circumference;
     label.textContent = '–';
-    note.textContent = 'Nothing logged yet.';
+    note.textContent = 'Tap a day to log your period and start tracking.';
   }
 
+  // grid
   const grid = document.getElementById('calendar-grid');
   grid.innerHTML = '';
   const year = current.getFullYear();
@@ -324,23 +537,33 @@ function render() {
     else if (predicted.has(key)) cell.classList.add('predicted');
     if (key === todayStr) cell.classList.add('today');
     cell.textContent = d;
+    cell.onclick = () => {
+      if (periodDays.has(key)) periodDays.delete(key);
+      else periodDays.add(key);
+      saveData();
+      render();
+    };
     grid.appendChild(cell);
   }
 }
 
-document.getElementById('prev-month').onclick = () => { current.setMonth(current.getMonth() - 1); render(); };
-document.getElementById('next-month').onclick = () => { current.setMonth(current.getMonth() + 1); render(); };
-
-if (!shareId) {
-  document.getElementById('loading').textContent = "This link is missing its id — ask for the correct link.";
-} else {
-  onSnapshot(doc(db, 'public', shareId), (snap) => {
-    periodDays = new Set(snap.exists() ? (snap.data().periodDays || []) : []);
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    render();
+document.getElementById('copy-link-btn').onclick = () => {
+  if (!currentUid) return;
+  const link = window.location.href.replace('index.html', '') + 'view.html?id=' + currentUid;
+  navigator.clipboard.writeText(link).then(() => {
+    document.getElementById('copy-link-btn').textContent = 'Copied!';
+    setTimeout(() => { document.getElementById('copy-link-btn').textContent = 'Copy my share link'; }, 1500);
   });
-}
+};
+
+document.getElementById('prev-month').onclick = () => {
+  current.setMonth(current.getMonth() - 1);
+  render();
+};
+document.getElementById('next-month').onclick = () => {
+  current.setMonth(current.getMonth() + 1);
+  render();
+};
 </script>
 
 </body>
