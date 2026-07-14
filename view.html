@@ -56,6 +56,15 @@
     min-width:150px;
     text-align:center;
   }
+  .app-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:28px;
+    text-align:center;
+    color:var(--wine);
+    margin:0 0 20px;
+    letter-spacing:0.5px;
+  }
   .ring-wrap{ position:relative; width:64px; height:64px; }
   .ring-wrap svg{ transform:rotate(-90deg); }
   .ring-track{ fill:none; stroke:var(--hairline); stroke-width:4; }
@@ -63,7 +72,15 @@
   .ring-label{
     position:absolute; inset:0;
     display:flex; align-items:center; justify-content:center;
-    font-size:13px; font-weight:500;
+    font-size:11px; font-weight:500;
+  }
+  .ring-caption{
+    text-align:center;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--muted);
+    margin-top:4px;
   }
   .phase-note{
     font-size:12px;
@@ -135,18 +152,23 @@
   <div id="loading" class="empty-state">Loading…</div>
 
   <div id="content" style="display:none;">
+    <h1 class="app-title">Code Red</h1>
+
     <div class="header">
       <div class="month-nav">
         <button id="prev-month">‹</button>
         <div class="month-title" id="month-title">—</div>
         <button id="next-month">›</button>
       </div>
-      <div class="ring-wrap">
-        <svg width="64" height="64" viewBox="0 0 64 64">
-          <circle class="ring-track" cx="32" cy="32" r="27"></circle>
-          <circle class="ring-progress" id="ring-progress" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
-        </svg>
-        <div class="ring-label" id="ring-label">–</div>
+      <div>
+        <div class="ring-wrap">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="ring-track" cx="32" cy="32" r="27"></circle>
+            <circle class="ring-progress" id="ring-progress" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
+          </svg>
+          <div class="ring-label" id="ring-label">–</div>
+        </div>
+        <div class="ring-caption">cycle day</div>
       </div>
     </div>
     <p class="phase-note" id="phase-note"></p>
@@ -171,7 +193,7 @@ const firebaseConfig = {
   storageBucket: "hallo-86b8b.firebasestorage.app",
   messagingSenderId: "601710514911",
   appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
-}
+};
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -224,6 +246,19 @@ function predictedDays(avgLength, lastStart) {
   return next;
 }
 
+const PHASE_LINES = {
+  Menstrual: "Alarmstufe Rot. Schokolade und Abstand halten.",
+  Follicular: "Aufbauphase. Vorsichtiger Optimismus kehrt zurück.",
+  Ovulation: "Höchste Chaos-Energie. Sei gewarnt.",
+  Luteal: "Der Sturm zieht auf. Rette sich, wer kann."
+};
+const PHASE_NAMES_DE = {
+  Menstrual: "Menstruation",
+  Follicular: "Follikelphase",
+  Ovulation: "Eisprung",
+  Luteal: "Lutealphase"
+};
+
 function render() {
   document.getElementById('month-title').textContent = MONTHS[current.getMonth()] + ' ' + current.getFullYear();
 
@@ -239,12 +274,12 @@ function render() {
     const clamped = Math.min(dayOfCycle, avgLength);
     const pct = clamped / avgLength;
     ring.style.strokeDashoffset = circumference * (1 - pct);
-    label.textContent = 'D' + dayOfCycle;
+    label.textContent = dayOfCycle + '/' + avgLength;
     let phase = 'Follicular';
     if (dayOfCycle <= 5) phase = 'Menstrual';
     else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
     else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
-    note.textContent = phase + ' phase · average cycle ' + avgLength + ' days';
+    note.textContent = PHASE_LINES[phase] + ' (' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
   } else {
     ring.style.strokeDashoffset = circumference;
     label.textContent = '–';
