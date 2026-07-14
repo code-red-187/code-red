@@ -187,12 +187,12 @@
 
 <script type="module">
 const firebaseConfig = {
-  apiKey: "AIzaSyD9DHCUde4F51K2hau861CsM74D0bvdSg4",
-  authDomain: "hallo-86b8b.firebaseapp.com",
-  projectId: "hallo-86b8b",
-  storageBucket: "hallo-86b8b.firebasestorage.app",
-  messagingSenderId: "601710514911",
-  appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -215,29 +215,43 @@ function fmt(d) {
 }
 
 function estimateCycle() {
-  const starts = [];
   const sorted = Array.from(periodDays).sort();
+  const starts = [];
+  const segments = [];
+  let segStart = null, segLen = 0;
   for (let i = 0; i < sorted.length; i++) {
     const prev = sorted[i-1];
-    if (!prev) { starts.push(sorted[i]); continue; }
-    const gap = (new Date(sorted[i]) - new Date(prev)) / 86400000;
-    if (gap > 1) starts.push(sorted[i]);
+    const gap = prev ? (new Date(sorted[i]) - new Date(prev)) / 86400000 : null;
+    if (!prev || gap > 1) {
+      if (segStart) segments.push(segLen);
+      starts.push(sorted[i]);
+      segStart = sorted[i];
+      segLen = 1;
+    } else {
+      segLen++;
+    }
   }
-  if (starts.length < 2) return { avgLength: 28, lastStart: starts[0] || null };
+  if (segStart) segments.push(segLen);
+
+  const periodLength = segments.length
+    ? Math.round(segments.reduce((a,b) => a+b, 0) / segments.length)
+    : 5;
+
+  if (starts.length < 2) return { avgLength: 28, lastStart: starts[0] || null, periodLength };
   let total = 0;
   for (let i = 1; i < starts.length; i++) {
     total += (new Date(starts[i]) - new Date(starts[i-1])) / 86400000;
   }
-  return { avgLength: Math.round(total / (starts.length - 1)), lastStart: starts[starts.length-1] };
+  return { avgLength: Math.round(total / (starts.length - 1)), lastStart: starts[starts.length-1], periodLength };
 }
 
-function predictedDays(avgLength, lastStart) {
+function predictedDays(avgLength, lastStart, periodLength) {
   if (!lastStart) return new Set();
   const next = new Set();
   for (let cycle = 1; cycle <= 3; cycle++) {
     const start = new Date(lastStart);
     start.setDate(start.getDate() + avgLength * cycle);
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < periodLength; i++) {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
       next.add(fmt(d));
@@ -247,10 +261,10 @@ function predictedDays(avgLength, lastStart) {
 }
 
 const PHASE_LINES = {
-  Menstrual: "HEUTE: Alarmstufe Rot. Schokolade und Abstand halten. Melde dich nächste Woche wieder",
-  Follicular: "HEUTE: Aufbauphase. Vorsichtiger Optimismus kehrt zurück.",
-  Ovulation: "HEUTE: Höchste Chaos-Energie. Sei gewarnt. Aber vermutlich fickrig",
-  Luteal: "HEUTE: Der Sturm zieht auf. Rette sich, wer kann."
+  Menstrual: "Alarmstufe Rot. Schokolade und Abstand halten.",
+  Follicular: "Aufbauphase. Vorsichtiger Optimismus kehrt zurück.",
+  Ovulation: "Höchste Chaos-Energie. Sei gewarnt.",
+  Luteal: "Der Sturm zieht auf. Rette sich, wer kann."
 };
 const PHASE_NAMES_DE = {
   Menstrual: "Menstruation",
@@ -262,8 +276,8 @@ const PHASE_NAMES_DE = {
 function render() {
   document.getElementById('month-title').textContent = MONTHS[current.getMonth()] + ' ' + current.getFullYear();
 
-  const { avgLength, lastStart } = estimateCycle();
-  const predicted = predictedDays(avgLength, lastStart);
+  const { avgLength, lastStart, periodLength } = estimateCycle();
+  const predicted = predictedDays(avgLength, lastStart, periodLength);
 
   const ring = document.getElementById('ring-progress');
   const label = document.getElementById('ring-label');
