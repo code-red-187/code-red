@@ -469,9 +469,9 @@ function listenForRequests(uid) {
       const r = docSnap.data();
       const item = document.createElement('div');
       item.className = 'request-item';
-      const when = (r.date || '?') + (r.time ? ' · ' + r.time : '');
+      const when = (r.date || '?') + (r.time ? ' · ' + r.time : '') + (r.place ? ' · ' + escapeHtml(r.place) : '');
       item.innerHTML =
-        '<div class="req-when">' + when + '</div>' +
+        '<div class="req-when">' + escapeHtml(r.name || 'Anonymous') + ' — ' + when + '</div>' +
         (r.note ? '<div class="req-note">' + escapeHtml(r.note) + '</div>' : '') +
         '<button class="req-dismiss">Dismiss</button>';
       item.querySelector('.req-dismiss').onclick = () => deleteDoc(doc(db, 'requests', uid, 'items', docSnap.id));
