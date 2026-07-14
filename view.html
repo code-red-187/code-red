@@ -245,15 +245,19 @@
     </div>
 
     <div class="request-card">
-      <button class="request-toggle" id="request-toggle">Fuck request 😏</button>
+      <button class="request-toggle" id="request-toggle">Send a request 😏</button>
       <div class="request-form" id="request-form">
+        <label>Name</label>
+        <input type="text" id="req-name" placeholder="who's asking">
         <label>Date</label>
         <input type="date" id="req-date">
         <label>Time</label>
         <input type="time" id="req-time">
+        <label>Place</label>
+        <input type="text" id="req-place" placeholder="where">
         <label>Note (optional)</label>
         <input type="text" id="req-note" placeholder="anything you want to add">
-        <button class="request-submit" id="request-submit">Send fuck request</button>
+        <button class="request-submit" id="request-submit">Send request</button>
       </div>
       <p class="request-sent" id="request-sent" style="display:none;">Sent 😏</p>
     </div>
@@ -412,13 +416,16 @@ document.getElementById('request-toggle').onclick = () => {
 };
 
 document.getElementById('request-submit').onclick = async () => {
+  const name = document.getElementById('req-name').value.trim();
   const date = document.getElementById('req-date').value;
   const time = document.getElementById('req-time').value;
+  const place = document.getElementById('req-place').value.trim();
   const note = document.getElementById('req-note').value.trim();
+  if (!name) { alert('Add a name first.'); return; }
   if (!date) { alert('Pick a date first.'); return; }
   if (!shareId) return;
   await addDoc(collection(db, 'requests', shareId, 'items'), {
-    date, time, note, createdAt: serverTimestamp()
+    name, date, time, place, note, createdAt: serverTimestamp()
   });
   document.getElementById('request-form').style.display = 'none';
   document.getElementById('request-toggle').style.display = 'none';
