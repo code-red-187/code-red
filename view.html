@@ -145,6 +145,66 @@
     font-size:14px;
     margin-top:80px;
   }
+  .request-card{
+    margin-top:28px;
+    border-top:1px solid var(--hairline);
+    padding-top:20px;
+    text-align:center;
+  }
+  .request-toggle{
+    background:var(--wine);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:11px 20px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .request-form{
+    display:none;
+    margin-top:14px;
+    text-align:left;
+  }
+  .request-form label{
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    display:block;
+    margin-bottom:4px;
+  }
+  .request-form input{
+    width:100%;
+    padding:10px 12px;
+    margin-bottom:12px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:var(--surface);
+    color:var(--ink);
+  }
+  .request-form input:focus{ outline:none; border-color:var(--wine); }
+  .request-submit{
+    width:100%;
+    padding:12px;
+    background:var(--wine);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .request-sent{
+    font-size:13px;
+    color:var(--sage);
+    margin-top:10px;
+    text-align:center;
+  }
 </style>
 </head>
 <body>
@@ -183,6 +243,20 @@
       <span><i class="dot period"></i>Logged</span>
       <span><i class="dot predicted"></i>Predicted</span>
     </div>
+
+    <div class="request-card">
+      <button class="request-toggle" id="request-toggle">Send a request 😏</button>
+      <div class="request-form" id="request-form">
+        <label>Date</label>
+        <input type="date" id="req-date">
+        <label>Time</label>
+        <input type="time" id="req-time">
+        <label>Note (optional)</label>
+        <input type="text" id="req-note" placeholder="anything you want to add">
+        <button class="request-submit" id="request-submit">Send request</button>
+      </div>
+      <p class="request-sent" id="request-sent" style="display:none;">Sent 😏</p>
+    </div>
   </div>
 </div>
 
@@ -197,7 +271,7 @@ const firebaseConfig = {
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -262,9 +336,9 @@ function predictedDays(avgLength, lastStart, periodLength) {
 }
 
 const PHASE_LINES = {
-  Menstrual: "HEUTE: Alarmstufe Rot. Schokolade und Abstand halten. Melde dich nächste Woche wieder oder nur kuscheln",
+  Menstrual: "HEUTE: Alarmstufe Rot. Schokolade und Abstand halten. Du kannst kuscheln kommen oder dich nächste Woche melden",
   Follicular: "HEUTE: Aufbauphase. Vorsichtiger Optimismus kehrt zurück.",
-  Ovulation: "HEUTE: Höchste Chaos-Energie. Sei gewarnt. Möglicherweise fickrig",
+  Ovulation: "HEUTE: Höchste Chaos-Energie. Sei gewarnt. Possibly fickrig..",
   Luteal: "HEUTE: Der Sturm zieht auf. Rette sich, wer kann."
 };
 const PHASE_NAMES_DE = {
@@ -294,8 +368,7 @@ function render() {
     if (dayOfCycle <= 5) phase = 'Menstrual';
     else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
     else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
-    note.textContent =   PHASE_LINES[phase] +  '\n(' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
-
+    note.textContent = PHASE_LINES[phase] + ' (' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
   } else {
     ring.style.strokeDashoffset = circumference;
     label.textContent = '–';
@@ -332,6 +405,25 @@ function render() {
 
 document.getElementById('prev-month').onclick = () => { current.setMonth(current.getMonth() - 1); render(); };
 document.getElementById('next-month').onclick = () => { current.setMonth(current.getMonth() + 1); render(); };
+
+document.getElementById('request-toggle').onclick = () => {
+  const form = document.getElementById('request-form');
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+};
+
+document.getElementById('request-submit').onclick = async () => {
+  const date = document.getElementById('req-date').value;
+  const time = document.getElementById('req-time').value;
+  const note = document.getElementById('req-note').value.trim();
+  if (!date) { alert('Pick a date first.'); return; }
+  if (!shareId) return;
+  await addDoc(collection(db, 'requests', shareId, 'items'), {
+    date, time, note, createdAt: serverTimestamp()
+  });
+  document.getElementById('request-form').style.display = 'none';
+  document.getElementById('request-toggle').style.display = 'none';
+  document.getElementById('request-sent').style.display = 'block';
+};
 
 if (!shareId) {
   document.getElementById('loading').textContent = "This link is missing its id — ask for the correct link.";
