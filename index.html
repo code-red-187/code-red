@@ -506,6 +506,7 @@ function render() {
     else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
     else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
     note.textContent = PHASE_LINES[phase] + '\n(' + PHASE_NAMES_DE[phase] + ', Tag ' + dayOfCycle + ')';
+    
   } else {
     ring.style.strokeDashoffset = circumference;
     label.textContent = '–';
