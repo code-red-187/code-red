@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF7F3;
+    --surface:#FFFFFF;
+    --ink:#2B2320;
+    --muted:#8A7F76;
+    --hairline:#E6DFD8;
+    --wine:#7A2E3A;
+    --wine-soft:#F3E3E3;
+    --rose:#E3B6BA;
+    --sage:#8B9A7A;
+    --sage-soft:#EEF1E9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:32px 20px 60px;
+  }
+
+  /* auth */
+  #auth-screen{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:70vh;
+    text-align:center;
+  }
+  #auth-screen h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:32px;
+    margin:0 0 6px;
+  }
+  #auth-screen p.tagline{
+    color:var(--muted);
+    font-size:14px;
+    margin:0 0 32px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:320px;
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:24px;
+  }
+  input{
+    width:100%;
+    padding:11px 14px;
+    margin-bottom:10px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  input:focus{
+    outline:none;
+    border-color:var(--wine);
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-primary{
+    width:100%;
+    padding:12px;
+    background:var(--wine);
+    color:#fff;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:500;
+    margin-top:4px;
+  }
+  .btn-primary:hover{ background:#642532; }
+  .btn-link{
+    background:none;
+    color:var(--muted);
+    font-size:13px;
+    margin-top:14px;
+    text-decoration:underline;
+  }
+  #auth-error{
+    color:var(--wine);
+    font-size:13px;
+    margin-top:10px;
+    min-height:16px;
+  }
+
+  /* app */
+  #app-screen{ display:none; }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:24px;
+  }
+  .topbar .email{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .signout{
+    background:none;
+    color:var(--muted);
+    font-size:12px;
+    text-decoration:underline;
+  }
+
+  .header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .month-nav{ display:flex; align-items:center; gap:14px; }
+  .month-nav button{
+    background:none;
+    color:var(--ink);
+    font-size:18px;
+    width:28px;height:28px;
+    border-radius:50%;
+  }
+  .month-nav button:hover{ background:var(--wine-soft); }
+  .month-title{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:22px;
+    min-width:150px;
+    text-align:center;
+  }
+
+  /* signature cycle ring */
+  .ring-wrap{ position:relative; width:64px; height:64px; }
+  .ring-wrap svg{ transform:rotate(-90deg); }
+  .ring-track{ fill:none; stroke:var(--hairline); stroke-width:4; }
+  .ring-progress{ fill:none; stroke:var(--wine); stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset .4s ease; }
+  .ring-label{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:500;
+  }
+
+  .phase-note{
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+    margin-bottom:22px;
+  }
+
+  .weekdays{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    margin-bottom:6px;
+  }
+  .weekdays span{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    font-weight:500;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .day{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    font-size:13px;
+    cursor:pointer;
+    position:relative;
+    color:var(--ink);
+  }
+  .day.empty{ cursor:default; }
+  .day:not(.empty):hover{ background:var(--wine-soft); }
+  .day.period{
+    background:var(--wine);
+    color:#fff;
+    font-weight:500;
+  }
+  .day.predicted{
+    border:1.5px dashed var(--rose);
+    color:var(--wine);
+  }
+  .day.today:not(.period){
+    box-shadow:0 0 0 1.5px var(--sage) inset;
+  }
+
+  .legend{
+    display:flex;
+    gap:18px;
+    justify-content:center;
+    margin-top:24px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dot.period{ background:var(--wine); }
+  .dot.predicted{ border:1.5px dashed var(--rose); }
+
+  .sync-status{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:28px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Sign in / sign up -->
+  <div id="auth-screen">
+    <h1>Cycle</h1>
+    <p class="tagline">Your calendar, synced across every device.</p>
+    <div class="auth-card">
+      <input type="email" id="email-input" placeholder="name@email.com" autocomplete="email">
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+      <button class="btn-primary" id="signin-btn">Sign in</button>
+      <button class="btn-link" id="toggle-mode-btn">Need an account? Sign up</button>
+      <p id="auth-error"></p>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app-screen">
+    <div class="topbar">
+      <span class="email" id="user-email"></span>
+      <button class="signout" id="signout-btn">Sign out</button>
+    </div>
+
+    <div class="header">
+      <div class="month-nav">
+        <button id="prev-month">‹</button>
+        <div class="month-title" id="month-title">—</div>
+        <button id="next-month">›</button>
+      </div>
+      <div class="ring-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle class="ring-track" cx="32" cy="32" r="27"></circle>
+          <circle class="ring-progress" id="ring-progress" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
+        </svg>
+        <div class="ring-label" id="ring-label">–</div>
+      </div>
+    </div>
+    <p class="phase-note" id="phase-note">Tap a day to mark it as a period day.</p>
+
+    <div class="weekdays">
+      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+    </div>
+    <div class="grid" id="calendar-grid"></div>
+
+    <div class="legend">
+      <span><i class="dot period"></i>Logged</span>
+      <span><i class="dot predicted"></i>Predicted</span>
+    </div>
+
+    <p class="sync-status" id="sync-status">Synced</p>
+
+    <div style="margin-top:20px; text-align:center;">
+      <button class="btn-link" id="copy-link-btn" style="margin:0;">Copy my share link</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+/* =========================================================
+   1. FIREBASE SETUP
+   Create a free project at https://console.firebase.google.com
+   -> Build > Authentication > Sign-in method > enable Email/Password
+   -> Build > Firestore Database > Create database (start in test mode,
+      then lock it down with the rules below)
+   -> Project settings > General > Your apps > Web app > copy the config
+      object below.
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyD9DHCUde4F51K2hau861CsM74D0bvdSg4",
+  authDomain: "hallo-86b8b.firebaseapp.com",
+  projectId: "hallo-86b8b",
+  storageBucket: "hallo-86b8b.firebasestorage.app",
+  messagingSenderId: "601710514911",
+  appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* =========================================================
+   2. AUTH
+   ========================================================= */
+let isSignUp = false;
+const authError = document.getElementById('auth-error');
+const emailInput = document.getElementById('email-input');
+const passwordInput = document.getElementById('password-input');
+
+document.getElementById('toggle-mode-btn').onclick = () => {
+  isSignUp = !isSignUp;
+  document.getElementById('signin-btn').textContent = isSignUp ? 'Sign up' : 'Sign in';
+  document.getElementById('toggle-mode-btn').textContent = isSignUp
+    ? 'Already have an account? Sign in'
+    : 'Need an account? Sign up';
+  authError.textContent = '';
+};
+
+document.getElementById('signin-btn').onclick = async () => {
+  authError.textContent = '';
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) { authError.textContent = 'Enter an email and password.'; return; }
+  try {
+    if (isSignUp) {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (e) {
+    authError.textContent = e.message.replace('Firebase: ', '');
+  }
+};
+
+document.getElementById('signout-btn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+    loadData(user.uid);
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+/* =========================================================
+   3. DATA
+   periodDays: array of "YYYY-MM-DD" strings the user has logged
+   ========================================================= */
+let periodDays = new Set();
+let currentUid = null;
+let current = new Date();
+current.setDate(1);
+
+async function loadData(uid) {
+  currentUid = uid;
+  const snap = await getDoc(doc(db, 'cycles', uid));
+  periodDays = new Set(snap.exists() ? (snap.data().periodDays || []) : []);
+  render();
+}
+
+async function saveData() {
+  if (!currentUid) return;
+  document.getElementById('sync-status').textContent = 'Syncing…';
+  const payload = { periodDays: Array.from(periodDays) };
+  await setDoc(doc(db, 'cycles', currentUid), payload);
+  // mirrored to a public doc so view.html can show it without login
+  await setDoc(doc(db, 'public', currentUid), payload);
+  document.getElementById('sync-status').textContent = 'Synced';
+}
+
+/* =========================================================
+   4. CALENDAR + CYCLE ESTIMATE
+   ========================================================= */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function fmt(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function estimateCycle() {
+  const starts = [];
+  const sorted = Array.from(periodDays).sort();
+  for (let i = 0; i < sorted.length; i++) {
+    const prev = sorted[i-1];
+    if (!prev) { starts.push(sorted[i]); continue; }
+    const gap = (new Date(sorted[i]) - new Date(prev)) / 86400000;
+    if (gap > 1) starts.push(sorted[i]);
+  }
+  if (starts.length < 2) return { avgLength: 28, lastStart: starts[0] || null };
+  let total = 0;
+  for (let i = 1; i < starts.length; i++) {
+    total += (new Date(starts[i]) - new Date(starts[i-1])) / 86400000;
+  }
+  return { avgLength: Math.round(total / (starts.length - 1)), lastStart: starts[starts.length-1] };
+}
+
+function predictedDays(avgLength, lastStart) {
+  if (!lastStart) return new Set();
+  const next = new Set();
+  const start = new Date(lastStart);
+  start.setDate(start.getDate() + avgLength);
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    next.add(fmt(d));
+  }
+  return next;
+}
+
+function render() {
+  document.getElementById('month-title').textContent = MONTHS[current.getMonth()] + ' ' + current.getFullYear();
+
+  const { avgLength, lastStart } = estimateCycle();
+  const predicted = predictedDays(avgLength, lastStart);
+
+  // ring: day-of-cycle out of avgLength
+  const ring = document.getElementById('ring-progress');
+  const label = document.getElementById('ring-label');
+  const note = document.getElementById('phase-note');
+  const circumference = 169.6;
+  if (lastStart) {
+    const dayOfCycle = Math.max(1, Math.round((new Date() - new Date(lastStart)) / 86400000) + 1);
+    const clamped = Math.min(dayOfCycle, avgLength);
+    const pct = clamped / avgLength;
+    ring.style.strokeDashoffset = circumference * (1 - pct);
+    label.textContent = 'D' + dayOfCycle;
+    let phase = 'Follicular';
+    if (dayOfCycle <= 5) phase = 'Menstrual';
+    else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
+    else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
+    note.textContent = phase + ' phase · average cycle ' + avgLength + ' days';
+  } else {
+    ring.style.strokeDashoffset = circumference;
+    label.textContent = '–';
+    note.textContent = 'Tap a day to log your period and start tracking.';
+  }
+
+  // grid
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  const year = current.getFullYear();
+  const month = current.getMonth();
+  const firstDay = new Date(year, month, 1);
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = fmt(new Date());
+
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day empty';
+    grid.appendChild(empty);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(year, month, d);
+    const key = fmt(cellDate);
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    if (periodDays.has(key)) cell.classList.add('period');
+    else if (predicted.has(key)) cell.classList.add('predicted');
+    if (key === todayStr) cell.classList.add('today');
+    cell.textContent = d;
+    cell.onclick = () => {
+      if (periodDays.has(key)) periodDays.delete(key);
+      else periodDays.add(key);
+      saveData();
+      render();
+    };
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('copy-link-btn').onclick = () => {
+  if (!currentUid) return;
+  const link = window.location.href.replace('index.html', '') + 'view.html?id=' + currentUid;
+  navigator.clipboard.writeText(link).then(() => {
+    document.getElementById('copy-link-btn').textContent = 'Copied!';
+    setTimeout(() => { document.getElementById('copy-link-btn').textContent = 'Copy my share link'; }, 1500);
+  });
+};
+
+document.getElementById('prev-month').onclick = () => {
+  current.setMonth(current.getMonth() - 1);
+  render();
+};
+document.getElementById('next-month').onclick = () => {
+  current.setMonth(current.getMonth() + 1);
+  render();
+};
+</script>
+
+</body>
+</html>
