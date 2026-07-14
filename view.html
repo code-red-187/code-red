@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF7F3;
+    --surface:#FFFFFF;
+    --ink:#2B2320;
+    --muted:#8A7F76;
+    --hairline:#E6DFD8;
+    --wine:#7A2E3A;
+    --wine-soft:#F3E3E3;
+    --rose:#E3B6BA;
+    --sage:#8B9A7A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:32px 20px 60px;
+  }
+  .header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .month-nav{ display:flex; align-items:center; gap:14px; }
+  .month-nav button{
+    background:none;
+    color:var(--ink);
+    font-size:18px;
+    width:28px;height:28px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+  }
+  .month-nav button:hover{ background:var(--wine-soft); }
+  .month-title{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:22px;
+    min-width:150px;
+    text-align:center;
+  }
+  .ring-wrap{ position:relative; width:64px; height:64px; }
+  .ring-wrap svg{ transform:rotate(-90deg); }
+  .ring-track{ fill:none; stroke:var(--hairline); stroke-width:4; }
+  .ring-progress{ fill:none; stroke:var(--wine); stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset .4s ease; }
+  .ring-label{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:500;
+  }
+  .phase-note{
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .weekdays{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    margin-bottom:6px;
+  }
+  .weekdays span{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    font-weight:500;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .day{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .day.empty{ visibility:hidden; }
+  .day.period{
+    background:var(--wine);
+    color:#fff;
+    font-weight:500;
+  }
+  .day.predicted{
+    border:1.5px dashed var(--rose);
+    color:var(--wine);
+  }
+  .day.today:not(.period){
+    box-shadow:0 0 0 1.5px var(--sage) inset;
+  }
+  .legend{
+    display:flex;
+    gap:18px;
+    justify-content:center;
+    margin-top:24px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dot.period{ background:var(--wine); }
+  .dot.predicted{ border:1.5px dashed var(--rose); }
+  .empty-state{
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    margin-top:80px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div id="loading" class="empty-state">Loading…</div>
+
+  <div id="content" style="display:none;">
+    <div class="header">
+      <div class="month-nav">
+        <button id="prev-month">‹</button>
+        <div class="month-title" id="month-title">—</div>
+        <button id="next-month">›</button>
+      </div>
+      <div class="ring-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle class="ring-track" cx="32" cy="32" r="27"></circle>
+          <circle class="ring-progress" id="ring-progress" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
+        </svg>
+        <div class="ring-label" id="ring-label">–</div>
+      </div>
+    </div>
+    <p class="phase-note" id="phase-note"></p>
+
+    <div class="weekdays">
+      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+    </div>
+    <div class="grid" id="calendar-grid"></div>
+
+    <div class="legend">
+      <span><i class="dot period"></i>Logged</span>
+      <span><i class="dot predicted"></i>Predicted</span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const firebaseConfig = {
+  apiKey: "AIzaSyD9DHCUde4F51K2hau861CsM74D0bvdSg4",
+  authDomain: "hallo-86b8b.firebaseapp.com",
+  projectId: "hallo-86b8b",
+  storageBucket: "hallo-86b8b.firebasestorage.app",
+  messagingSenderId: "601710514911",
+  appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(window.location.search);
+const shareId = params.get('id');
+
+let periodDays = new Set();
+let current = new Date();
+current.setDate(1);
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function fmt(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function estimateCycle() {
+  const starts = [];
+  const sorted = Array.from(periodDays).sort();
+  for (let i = 0; i < sorted.length; i++) {
+    const prev = sorted[i-1];
+    if (!prev) { starts.push(sorted[i]); continue; }
+    const gap = (new Date(sorted[i]) - new Date(prev)) / 86400000;
+    if (gap > 1) starts.push(sorted[i]);
+  }
+  if (starts.length < 2) return { avgLength: 28, lastStart: starts[0] || null };
+  let total = 0;
+  for (let i = 1; i < starts.length; i++) {
+    total += (new Date(starts[i]) - new Date(starts[i-1])) / 86400000;
+  }
+  return { avgLength: Math.round(total / (starts.length - 1)), lastStart: starts[starts.length-1] };
+}
+
+function predictedDays(avgLength, lastStart) {
+  if (!lastStart) return new Set();
+  const next = new Set();
+  const start = new Date(lastStart);
+  start.setDate(start.getDate() + avgLength);
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    next.add(fmt(d));
+  }
+  return next;
+}
+
+function render() {
+  document.getElementById('month-title').textContent = MONTHS[current.getMonth()] + ' ' + current.getFullYear();
+
+  const { avgLength, lastStart } = estimateCycle();
+  const predicted = predictedDays(avgLength, lastStart);
+
+  const ring = document.getElementById('ring-progress');
+  const label = document.getElementById('ring-label');
+  const note = document.getElementById('phase-note');
+  const circumference = 169.6;
+  if (lastStart) {
+    const dayOfCycle = Math.max(1, Math.round((new Date() - new Date(lastStart)) / 86400000) + 1);
+    const clamped = Math.min(dayOfCycle, avgLength);
+    const pct = clamped / avgLength;
+    ring.style.strokeDashoffset = circumference * (1 - pct);
+    label.textContent = 'D' + dayOfCycle;
+    let phase = 'Follicular';
+    if (dayOfCycle <= 5) phase = 'Menstrual';
+    else if (dayOfCycle >= avgLength - 16 && dayOfCycle <= avgLength - 12) phase = 'Ovulation';
+    else if (dayOfCycle > avgLength - 12) phase = 'Luteal';
+    note.textContent = phase + ' phase · average cycle ' + avgLength + ' days';
+  } else {
+    ring.style.strokeDashoffset = circumference;
+    label.textContent = '–';
+    note.textContent = 'Nothing logged yet.';
+  }
+
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  const year = current.getFullYear();
+  const month = current.getMonth();
+  const firstDay = new Date(year, month, 1);
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = fmt(new Date());
+
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day empty';
+    grid.appendChild(empty);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(year, month, d);
+    const key = fmt(cellDate);
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    if (periodDays.has(key)) cell.classList.add('period');
+    else if (predicted.has(key)) cell.classList.add('predicted');
+    if (key === todayStr) cell.classList.add('today');
+    cell.textContent = d;
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('prev-month').onclick = () => { current.setMonth(current.getMonth() - 1); render(); };
+document.getElementById('next-month').onclick = () => { current.setMonth(current.getMonth() + 1); render(); };
+
+if (!shareId) {
+  document.getElementById('loading').textContent = "This link is missing its id — ask for the correct link.";
+} else {
+  onSnapshot(doc(db, 'public', shareId), (snap) => {
+    periodDays = new Set(snap.exists() ? (snap.data().periodDays || []) : []);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    render();
+  });
+}
+</script>
+
+</body>
+</html>
