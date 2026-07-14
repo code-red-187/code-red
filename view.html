@@ -171,7 +171,7 @@ const firebaseConfig = {
   storageBucket: "hallo-86b8b.firebasestorage.app",
   messagingSenderId: "601710514911",
   appId: "1:601710514911:web:d133f9a75d4e3a30dc0f6a"
-};
+}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -212,12 +212,14 @@ function estimateCycle() {
 function predictedDays(avgLength, lastStart) {
   if (!lastStart) return new Set();
   const next = new Set();
-  const start = new Date(lastStart);
-  start.setDate(start.getDate() + avgLength);
-  for (let i = 0; i < 5; i++) {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    next.add(fmt(d));
+  for (let cycle = 1; cycle <= 3; cycle++) {
+    const start = new Date(lastStart);
+    start.setDate(start.getDate() + avgLength * cycle);
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      next.add(fmt(d));
+    }
   }
   return next;
 }
